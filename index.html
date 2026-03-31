@@ -3,15 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OOO Traffic Command System</title>
+<title>Traffic Lights System</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <!-- Firebase COMPAT SDK (v9 compat — no ES module imports needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-<!-- Audio -->
-<audio id="audioHenshin" src="media/Henshin.mp3" loop></audio>
-<audio id="audioOOO"     src="media/OOO.mp3"     loop></audio>
+
 <style>
   :root {
     --red: #cc2200;
@@ -565,7 +563,7 @@
       </svg>
     </div>
     <div class="title-block">
-      <h1>OOO TRAFFIC COMMAND</h1>
+      <h1>TRAFFIC LIGHTS SYSTEM</h1>
       <p>ESP32 · Firebase RT · RED-YELLOW-GREEN LED</p>
     </div>
   </div>
@@ -574,14 +572,14 @@
       <div class="conn-dot" id="fbDot"></div>
       <span id="fbStatus">CONNECTING</span>
     </div>
-    <button class="music-btn" id="oooMusicBtn" onclick="toggleOOOMusic()">
+   
       <div class="eq-bars">
         <div class="eq-bar"></div>
         <div class="eq-bar"></div>
         <div class="eq-bar"></div>
         <div class="eq-bar"></div>
       </div>
-      <span id="oooMusicLabel">OOO BGM</span>
+     
     </button>
     <div class="conn-badge" style="border-color: rgba(255,100,0,0.35);">
       <div class="conn-dot" id="espDot"></div>
@@ -731,13 +729,12 @@
 <script>
 // ─── Firebase Init ───────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyAgbmV5PMjWZ_4Av4tfHVsRN-X7lxRaGy4",
-  authDomain: "traffic-light-a4480.firebaseapp.com",
-  databaseURL: "https://traffic-light-a4480-default-rtdb.firebaseio.com",
-  projectId: "traffic-light-a4480",
-  storageBucket: "traffic-light-a4480.firebasestorage.app",
-  messagingSenderId: "151407561050",
-  appId: "1:151407561050:web:b3e0b2617e95fc679e0b63"
+ apiKey: "AIzaSyCjNL9JvwRLOZy4oE9fWuMCZODr6rZTpgM",
+  authDomain: "traffic-light-esp32.firebaseapp.com",
+  projectId: "traffic-light-esp32",
+  storageBucket: "traffic-light-esp32.firebasestorage.app",
+  messagingSenderId: "1045926047685",
+  appId: "1:1045926047685:web:fbba343be05890693625ac"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -1125,34 +1122,16 @@ setInterval(() => { if (cars.length < 12) spawnCar(); }, 1800);
 function loop() { drawScene(); requestAnimationFrame(loop); }
 loop();
 
-// ─── Audio ───────────────────────────────────────────────────────
-const audioHenshin = document.getElementById('audioHenshin');
-const audioOOO     = document.getElementById('audioOOO');
-let oooPlaying = false;
 
 function syncHenshinAudio(mode) {
   if (mode === 'auto') audioHenshin.play().catch(() => {});
   else                 audioHenshin.pause();
 }
 
-function toggleOOOMusic() {
-  const btn   = document.getElementById('oooMusicBtn');
-  const label = document.getElementById('oooMusicLabel');
-  if (oooPlaying) {
-    audioOOO.pause();
-    oooPlaying = false;
-    btn.classList.remove('playing');
-    label.textContent = 'OOO BGM';
-  } else {
-    audioOOO.play().catch(() => {});
-    oooPlaying = true;
-    btn.classList.add('playing');
-    label.textContent = 'PLAYING';
-  }
-}
+
 
 // ─── Init ─────────────────────────────────────────────────────────
-addLog('OOO Traffic System initialized', 'gold');
+addLog('Traffic Light initialized', 'gold');
 addLog('Sequence: GREEN → YELLOW(5s) → RED → GREEN', 'gold');
 addLog('Awaiting Firebase connection…', 'gold');
 
