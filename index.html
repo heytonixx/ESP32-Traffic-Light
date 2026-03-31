@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OOO Traffic Command System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Firebase COMPAT SDK (v9 compat — no ES module imports needed) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<!-- Audio -->
+<audio id="audioHenshin" src="media/Henshin.mp3" loop></audio>
+<audio id="audioOOO"     src="media/OOO.mp3"     loop></audio>
+<style>
+  :root {
+    --red: #cc2200;
+    --red-glow: #ff3311;
+    --red-deep: #8b1500;
+    --yellow: #e6a800;
+    --yellow-glow: #ffcc00;
+    --yellow-light: #ffe066;
+    --green: #1e9c4a;
+    --green-glow: #2ecc71;
+    --accent: #ff3311;
+    --accent2: #ffcc00;
+    --black: #0a0505;
+    --dark: #110a08;
+    --panel: #160c0a;
+    --panel2: #1e1008;
+    --border: #3a1a10;
+    --border2: #4a2a10;
+    --text: #f0dcc8;
+    --text-dim: #9a7a68;
+    --active-color: var(--green-glow);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 10% 20%, rgba(255,50,10,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 90% 80%, rgba(230,168,0,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(180,30,0,0.05) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,80,10,0.018) 40px, rgba(255,80,10,0.018) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,200,0,0.015) 40px, rgba(255,200,0,0.015) 41px);
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    border-bottom: 2px solid var(--red);
+    background: linear-gradient(90deg, #0a0302 0%, #1a0805 50%, #0a0302 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,50,10,0.10) 30%, rgba(255,200,0,0.08) 70%, transparent 100%);
+    animation: headerSweep 4s ease-in-out infinite;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--yellow-glow), var(--red-glow), var(--yellow-glow), transparent);
+    opacity: 0.6;
+  }
+  @keyframes headerSweep { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 1;
+  }
+  .emblem {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 3px solid var(--red);
+    background: radial-gradient(circle, #1a0400 0%, #0a0200 100%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: 0 0 18px rgba(255,50,10,0.5), inset 0 0 10px rgba(255,50,10,0.15);
+    animation: emblemPulse 3s ease-in-out infinite;
+  }
+  @keyframes emblemPulse {
+    0%,100% { box-shadow: 0 0 18px rgba(255,50,10,0.5), inset 0 0 10px rgba(255,50,10,0.15); border-color: var(--red); }
+    50% { box-shadow: 0 0 32px rgba(255,200,0,0.7), inset 0 0 18px rgba(255,200,0,0.2); border-color: var(--yellow-glow); }
+  }
+  .emblem svg { width: 32px; height: 32px; }
+
+  .title-block h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--red-glow), var(--yellow-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 8px rgba(255,100,0,0.5));
+  }
+  .title-block p {
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .status-bar {
+    display: flex; align-items: center; gap: 18px; z-index: 1;
+  }
+  .conn-badge {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: rgba(255,50,10,0.04);
+  }
+  .conn-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #553322;
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .conn-dot.online { background: var(--yellow-glow); box-shadow: 0 0 8px var(--yellow-glow); }
+  .conn-dot.offline { background: var(--red-glow); box-shadow: 0 0 8px var(--red-glow); }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: grid;
+    grid-template-columns: 340px 1fr 260px;
+    gap: 18px;
+    padding: 18px 24px;
+    min-height: calc(100vh - 80px);
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red), var(--yellow), var(--red), transparent);
+  }
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--yellow-glow);
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::before {
+    content: '';
+    width: 4px; height: 4px;
+    background: var(--red-glow);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--red-glow);
+  }
+
+  /* ── TRAFFIC LIGHT CONTROL ── */
+  .light-panel { display: flex; flex-direction: column; gap: 0; }
+
+  .traffic-light-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    gap: 0;
+    background: linear-gradient(180deg, #0d0604 0%, #160c0a 100%);
+  }
+
+  .tl-housing {
+    background: linear-gradient(180deg, #1c1008 0%, #120a06 100%);
+    border: 2px solid var(--border2);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.6), 0 0 50px rgba(255,50,0,0.05);
+    position: relative;
+  }
+  .tl-housing::after {
+    content: '';
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    bottom: -30px;
+    width: 8px; height: 30px;
+    background: linear-gradient(180deg, var(--border2), #1a1008);
+    border-radius: 0 0 4px 4px;
+  }
+
+  .tl-light {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    border: 3px solid #0a0200;
+    position: relative;
+    transition: all 0.4s ease;
+    cursor: pointer;
+  }
+  .tl-light.red-l {
+    background: radial-gradient(circle at 35% 35%, #2a0505, #150202);
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+  }
+  .tl-light.red-l.active {
+    background: radial-gradient(circle at 35% 35%, #ff9977, #cc2200);
+    box-shadow: 0 0 30px var(--red-glow), 0 0 70px rgba(255,50,10,0.5), inset 0 0 20px rgba(255,200,180,0.2);
+    border-color: var(--red);
+  }
+  .tl-light.yellow-l {
+    background: radial-gradient(circle at 35% 35%, #1e1100, #0e0900);
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+  }
+  .tl-light.yellow-l.active {
+    background: radial-gradient(circle at 35% 35%, #ffe580, #e6a800);
+    box-shadow: 0 0 30px var(--yellow-glow), 0 0 70px rgba(255,200,0,0.5), inset 0 0 20px rgba(255,240,200,0.2);
+    border-color: var(--yellow);
+    animation: yellowBlink 0.8s ease-in-out infinite;
+  }
+  @keyframes yellowBlink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  .tl-light.green-l {
+    background: radial-gradient(circle at 35% 35%, #002210, #001008);
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+  }
+  .tl-light.green-l.active {
+    background: radial-gradient(circle at 35% 35%, #88ffbb, #1e9c4a);
+    box-shadow: 0 0 30px var(--green-glow), 0 0 60px rgba(30,156,74,0.4), inset 0 0 20px rgba(200,255,220,0.2);
+    border-color: var(--green);
+  }
+
+  .tl-label {
+    position: absolute;
+    bottom: -22px; left: 50%; transform: translateX(-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    color: var(--text-dim);
+  }
+
+  /* Control buttons */
+  .controls {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .ctrl-btn {
+    padding: 12px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    background: rgba(255,50,10,0.03);
+    color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .ctrl-btn .dot { width: 14px; height: 14px; border-radius: 50%; background: #331a10; transition: all 0.2s; }
+  .ctrl-btn.red-btn:hover, .ctrl-btn.red-btn.sel {
+    border-color: var(--red); color: var(--red-glow); background: rgba(200,30,0,0.12);
+  }
+  .ctrl-btn.red-btn:hover .dot, .ctrl-btn.red-btn.sel .dot { background: var(--red-glow); box-shadow: 0 0 8px var(--red-glow); }
+  .ctrl-btn.yel-btn:hover, .ctrl-btn.yel-btn.sel {
+    border-color: var(--yellow); color: var(--yellow-glow); background: rgba(200,150,0,0.12);
+  }
+  .ctrl-btn.yel-btn:hover .dot, .ctrl-btn.yel-btn.sel .dot { background: var(--yellow-glow); box-shadow: 0 0 8px var(--yellow-glow); }
+  .ctrl-btn.grn-btn:hover, .ctrl-btn.grn-btn.sel {
+    border-color: var(--green); color: var(--green-glow); background: rgba(30,156,74,0.1);
+  }
+  .ctrl-btn.grn-btn:hover .dot, .ctrl-btn.grn-btn.sel .dot { background: var(--green-glow); box-shadow: 0 0 8px var(--green-glow); }
+
+  .mode-controls {
+    padding: 0 16px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mode-btn {
+    padding: 10px;
+    border: 1.5px solid var(--border2);
+    border-radius: 5px;
+    background: rgba(255,50,0,0.04);
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .mode-btn:hover {
+    border-color: var(--yellow);
+    color: var(--yellow-light);
+    background: rgba(200,150,0,0.10);
+  }
+  .mode-btn.active {
+    border-color: var(--red);
+    color: var(--red-glow);
+    background: rgba(200,30,0,0.15);
+    box-shadow: 0 0 10px rgba(255,50,10,0.25);
+  }
+
+  /* Auto timer */
+  .timer-section {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .timer-row {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .timer-label { font-size: 0.75rem; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+  .timer-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--active-color);
+    text-shadow: 0 0 12px var(--active-color);
+    transition: color 0.3s, text-shadow 0.3s;
+    min-width: 60px; text-align: right;
+  }
+  .timer-bar-bg {
+    height: 4px; background: rgba(255,80,10,0.10); border-radius: 2px; overflow: hidden;
+  }
+  .timer-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.9s linear, background 0.3s;
+    background: var(--active-color);
+    box-shadow: 0 0 8px var(--active-color);
+  }
+
+  /* Duration inputs */
+  .duration-inputs {
+    padding: 0 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .dur-group label {
+    display: block;
+    font-size: 0.62rem; letter-spacing: 2px; color: var(--text-dim);
+    margin-bottom: 4px; text-transform: uppercase;
+  }
+  .dur-group input {
+    width: 100%; padding: 7px 8px;
+    background: rgba(255,50,0,0.05);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .dur-group input:focus { outline: none; border-color: var(--yellow); box-shadow: 0 0 8px rgba(255,200,0,0.2); }
+
+  /* sequence hint */
+  .seq-hint {
+    padding: 0 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .seq-pip {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .seq-arrow { color: #553322; font-size: 0.7rem; }
+
+  /* ── ROAD SCREEN ── */
+  .road-panel { display: flex; flex-direction: column; }
+  .road-canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #080302;
+  }
+  canvas#roadCanvas { display: block; width: 100%; height: 100%; }
+
+  .road-overlay {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    background: rgba(10,4,2,0.88);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 8px 14px;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    backdrop-filter: blur(6px);
+  }
+  .road-signal-badge {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: var(--active-color);
+    box-shadow: 0 0 6px var(--active-color);
+    transition: all 0.3s;
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-col { display: flex; flex-direction: column; gap: 14px; }
+
+  .stat-block {
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(255,80,10,0.08);
+    padding-bottom: 8px;
+  }
+  .stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .stat-key { font-size: 0.72rem; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+  .stat-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-val.red-t { color: var(--red-glow); }
+  .stat-val.yel-t { color: var(--yellow-glow); }
+  .stat-val.grn-t { color: var(--green-glow); }
+  .stat-val.gold-t { color: var(--yellow-light); }
+
+  /* Log */
+  .log-block { padding: 10px 14px; flex: 1; }
+  .log-entries { display: flex; flex-direction: column; gap: 5px; max-height: 240px; overflow-y: auto; }
+  .log-entries::-webkit-scrollbar { width: 3px; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .log-entry {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 0.72rem; line-height: 1.4;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,80,0,0.06);
+    animation: logIn 0.3s ease;
+  }
+  @keyframes logIn { from { opacity:0; transform: translateX(-6px); } to { opacity:1; transform: translateX(0); } }
+  .log-time { color: var(--text-dim); letter-spacing: 1px; white-space: nowrap; font-family: 'Orbitron', monospace; font-size: 0.6rem; }
+  .log-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+  .log-msg { color: var(--text); }
+
+  /* Mini traffic light in right panel */
+  .mini-tl { display: flex; gap: 8px; align-items: center; justify-content: center; padding: 12px 0; }
+  .mini-bulb {
+    width: 22px; height: 22px; border-radius: 50%;
+    transition: all 0.3s;
+  }
+  .mini-bulb.r { background: #1a0404; }
+  .mini-bulb.r.on { background: var(--red-glow); box-shadow: 0 0 10px var(--red-glow); }
+  .mini-bulb.y { background: #140e00; }
+  .mini-bulb.y.on { background: var(--yellow-glow); box-shadow: 0 0 10px var(--yellow-glow); animation: yellowBlink 0.8s ease-in-out infinite; }
+  .mini-bulb.g { background: #001008; }
+  .mini-bulb.g.on { background: var(--green-glow); box-shadow: 0 0 10px var(--green-glow); }
+
+  /* Music button */
+  .music-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: rgba(255,50,0,0.04);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+  }
+  .music-btn:hover {
+    border-color: var(--yellow);
+    color: var(--yellow-light);
+    background: rgba(200,150,0,0.10);
+  }
+  .music-btn.playing {
+    border-color: var(--red);
+    color: var(--red-glow);
+    background: rgba(200,30,0,0.12);
+    box-shadow: 0 0 10px rgba(255,50,10,0.25);
+  }
+  .eq-bars {
+    display: flex; align-items: flex-end; gap: 2px;
+    height: 14px; width: 16px;
+  }
+  .eq-bar {
+    width: 3px; border-radius: 1px;
+    background: var(--text-dim);
+    transition: background 0.2s;
+  }
+  .music-btn.playing .eq-bar { background: var(--red-glow); }
+  .eq-bar:nth-child(1) { height: 40%; animation: none; }
+  .eq-bar:nth-child(2) { height: 70%; animation: none; }
+  .eq-bar:nth-child(3) { height: 55%; animation: none; }
+  .eq-bar:nth-child(4) { height: 90%; animation: none; }
+  .music-btn.playing .eq-bar:nth-child(1) { animation: eq1 0.6s ease-in-out infinite alternate; }
+  .music-btn.playing .eq-bar:nth-child(2) { animation: eq2 0.5s ease-in-out infinite alternate; }
+  .music-btn.playing .eq-bar:nth-child(3) { animation: eq3 0.7s ease-in-out infinite alternate; }
+  .music-btn.playing .eq-bar:nth-child(4) { animation: eq4 0.4s ease-in-out infinite alternate; }
+  @keyframes eq1 { from{height:20%} to{height:80%} }
+  @keyframes eq2 { from{height:60%} to{height:30%} }
+  @keyframes eq3 { from{height:40%} to{height:100%} }
+  @keyframes eq4 { from{height:80%} to{height:20%} }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .road-canvas-wrap { height: 320px; }
+  }
+  @media (max-width: 600px) {
+    header { padding: 10px 14px; }
+    .title-block h1 { font-size: 0.9rem; }
+    .main { padding: 10px; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="emblem">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" stroke="#ff3311" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="10" stroke="#e6a800" stroke-width="1"/>
+        <path d="M16 4 L20 12 L28 12 L22 18 L24 26 L16 22 L8 26 L10 18 L4 12 L12 12 Z" fill="#e6a800" opacity="0.7"/>
+        <circle cx="16" cy="16" r="4" fill="#cc2200" opacity="0.9"/>
+        <circle cx="16" cy="16" r="2" fill="#ff6644"/>
+      </svg>
+    </div>
+    <div class="title-block">
+      <h1>OOO TRAFFIC COMMAND</h1>
+      <p>ESP32 · Firebase RT · RED-YELLOW-GREEN LED</p>
+    </div>
+  </div>
+  <div class="status-bar">
+    <div class="conn-badge">
+      <div class="conn-dot" id="fbDot"></div>
+      <span id="fbStatus">CONNECTING</span>
+    </div>
+    <button class="music-btn" id="oooMusicBtn" onclick="toggleOOOMusic()">
+      <div class="eq-bars">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+      <span id="oooMusicLabel">OOO BGM</span>
+    </button>
+    <div class="conn-badge" style="border-color: rgba(255,100,0,0.35);">
+      <div class="conn-dot" id="espDot"></div>
+      <span id="espStatus">ESP32</span>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- LEFT: Traffic Light Control -->
+  <div class="panel light-panel">
+    <div class="panel-title">Signal Control Unit</div>
+
+    <div class="traffic-light-visual">
+      <div class="tl-housing">
+        <div class="tl-light red-l" id="tlRed" onclick="setManualLight('red')">
+          <span class="tl-label">RED · STOP</span>
+        </div>
+        <div class="tl-light yellow-l" id="tlYellow" onclick="setManualLight('yellow')">
+          <span class="tl-label">YELLOW · CAUTION</span>
+        </div>
+        <div class="tl-light green-l" id="tlGreen" onclick="setManualLight('green')">
+          <span class="tl-label">GREEN · GO</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn red-btn" onclick="setManualLight('red')">
+        <div class="dot"></div>
+        STOP
+      </button>
+      <button class="ctrl-btn yel-btn" onclick="setManualLight('yellow')">
+        <div class="dot"></div>
+        CAUTION
+      </button>
+      <button class="ctrl-btn grn-btn" onclick="setManualLight('green')">
+        <div class="dot"></div>
+        GO
+      </button>
+    </div>
+
+    <div class="mode-controls">
+      <button class="mode-btn" id="manualBtn" onclick="setMode('manual')">MANUAL</button>
+      <button class="mode-btn" id="autoBtn" onclick="setMode('auto')">AUTO CYCLE</button>
+    </div>
+
+    <div class="timer-section">
+      <div class="timer-row">
+        <span class="timer-label">Phase Timer</span>
+        <span class="timer-val" id="timerDisplay">--</span>
+      </div>
+      <div class="timer-bar-bg">
+        <div class="timer-bar-fill" id="timerBar" style="width:100%"></div>
+      </div>
+    </div>
+
+    <div style="padding: 10px 16px 4px; font-family:'Orbitron',monospace; font-size:0.62rem; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">
+      Auto Durations (sec)
+    </div>
+    <!-- Only Red & Green are configurable; Yellow is always 5s in auto -->
+    <div class="duration-inputs">
+      <div class="dur-group">
+        <label style="color:var(--red-glow)">Red</label>
+        <input type="number" id="durRed" value="30" min="1" max="999" onchange="updateDurations()">
+      </div>
+      <div class="dur-group">
+        <label style="color:var(--green-glow)">Green</label>
+        <input type="number" id="durGreen" value="25" min="1" max="999" onchange="updateDurations()">
+      </div>
+    </div>
+
+    <!-- Sequence hint -->
+    <div class="seq-hint">
+      <div class="seq-pip" style="background:var(--green-glow);box-shadow:0 0 6px var(--green-glow)"></div>
+      <span>Green</span>
+      <span class="seq-arrow">→</span>
+      <div class="seq-pip" style="background:var(--yellow-glow);box-shadow:0 0 6px var(--yellow-glow)"></div>
+      <span>5s</span>
+      <span class="seq-arrow">→</span>
+      <div class="seq-pip" style="background:var(--red-glow);box-shadow:0 0 6px var(--red-glow)"></div>
+      <span>Red</span>
+      <span class="seq-arrow">→</span>
+      <div class="seq-pip" style="background:var(--green-glow);box-shadow:0 0 6px var(--green-glow)"></div>
+      <span style="font-size:0.55rem;color:#553322">(no yellow)</span>
+    </div>
+  </div>
+
+  <!-- CENTER: Road Simulation -->
+  <div class="panel road-panel">
+    <div class="panel-title">Live Road Simulation</div>
+    <div class="road-canvas-wrap">
+      <canvas id="roadCanvas"></canvas>
+      <div class="road-overlay">
+        <span class="road-signal-badge" id="roadBadge"></span>
+        <span id="roadStatus">CONNECTING...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Stats & Log -->
+  <div class="right-col">
+    <div class="panel">
+      <div class="panel-title">System Status</div>
+      <div class="mini-tl">
+        <div class="mini-bulb r" id="miniR"></div>
+        <div class="mini-bulb y" id="miniY"></div>
+        <div class="mini-bulb g" id="miniG"></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-row">
+          <span class="stat-key">Active Signal</span>
+          <span class="stat-val" id="activeSig">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Mode</span>
+          <span class="stat-val gold-t" id="activeMode">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Cycles Done</span>
+          <span class="stat-val" id="cycleCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">ESP32 Uptime</span>
+          <span class="stat-val" id="uptimeVal">--:--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Cars Passed</span>
+          <span class="stat-val grn-t" id="carsPassed">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">ESP32 IP</span>
+          <span class="stat-val" id="espIP" style="font-size:0.65rem;">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="flex:1">
+      <div class="panel-title">Event Log</div>
+      <div class="log-block">
+        <div class="log-entries" id="logEntries"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Firebase Init ───────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAgbmV5PMjWZ_4Av4tfHVsRN-X7lxRaGy4",
+  authDomain: "traffic-light-a4480.firebaseapp.com",
+  databaseURL: "https://traffic-light-a4480-default-rtdb.firebaseio.com",
+  projectId: "traffic-light-a4480",
+  storageBucket: "traffic-light-a4480.firebasestorage.app",
+  messagingSenderId: "151407561050",
+  appId: "1:151407561050:web:b3e0b2617e95fc679e0b63"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const tlRef = db.ref('trafficLight');
+
+// ─── Firebase connection status ──────────────────────────────────
+db.ref('.info/connected').on('value', snap => {
+  const c = snap.val();
+  document.getElementById('fbDot').className = 'conn-dot ' + (c ? 'online' : 'offline');
+  document.getElementById('fbStatus').textContent = c ? 'FIREBASE OK' : 'DISCONNECTED';
+  if (c) addLog('Firebase connected', 'green');
+  else    addLog('Firebase disconnected', 'red');
+});
+
+// ─── Local state ─────────────────────────────────────────────────
+let currentLight = 'red';
+let currentMode  = 'manual';
+let cycles       = 0;
+let carsPassed   = 0;
+
+// ─────────────────────────────────────────────────────────────────
+// AUTO-CYCLE LOGIC
+const YELLOW_FIXED_S = 5;
+const AUTO_SEQ = ['green', 'yellow', 'red'];
+let autoSeqIdx  = 0;
+let autoTimeout = null;
+let countdownInterval = null;
+let countdownLeft = 0;
+let countdownMax  = 0;
+
+function getDur(phase) {
+  if (phase === 'yellow') return YELLOW_FIXED_S;
+  if (phase === 'red')    return parseInt(document.getElementById('durRed').value)   || 30;
+  if (phase === 'green')  return parseInt(document.getElementById('durGreen').value) || 25;
+  return 10;
+}
+
+function pushSignal(color) {
+  tlRef.update({ signal: color, timestamp: Date.now() });
+  updateVisuals(color);
+  addLog(`Signal → ${color.toUpperCase()} (auto)`, color);
+}
+
+function runAutoPhase() {
+  const phase    = AUTO_SEQ[autoSeqIdx];
+  const duration = getDur(phase);
+  pushSignal(phase);
+  startCountdown(duration);
+  autoTimeout = setTimeout(() => {
+    autoSeqIdx = (autoSeqIdx + 1) % AUTO_SEQ.length;
+    if (AUTO_SEQ[autoSeqIdx] === 'green') {
+      cycles++;
+      document.getElementById('cycleCount').textContent = cycles;
+    }
+    runAutoPhase();
+  }, duration * 1000);
+}
+
+function startAutoCycle() {
+  stopAutoCycle();
+  autoSeqIdx = 0;
+  runAutoPhase();
+}
+
+function stopAutoCycle() {
+  if (autoTimeout)         { clearTimeout(autoTimeout);          autoTimeout = null; }
+  if (countdownInterval)   { clearInterval(countdownInterval);   countdownInterval = null; }
+  document.getElementById('timerDisplay').textContent = '--';
+  document.getElementById('timerBar').style.width = '100%';
+}
+
+function startCountdown(seconds) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownMax  = seconds;
+  countdownLeft = seconds;
+  updateCountdownDisplay();
+  countdownInterval = setInterval(() => {
+    countdownLeft = Math.max(0, countdownLeft - 1);
+    updateCountdownDisplay();
+  }, 1000);
+}
+
+function updateCountdownDisplay() {
+  document.getElementById('timerDisplay').textContent = countdownLeft + 's';
+  const pct = countdownMax > 0 ? (countdownLeft / countdownMax) * 100 : 100;
+  document.getElementById('timerBar').style.width = pct + '%';
+}
+
+function updateVisuals(color) {
+  document.getElementById('tlRed').classList.toggle('active',    color === 'red');
+  document.getElementById('tlYellow').classList.toggle('active', color === 'yellow');
+  document.getElementById('tlGreen').classList.toggle('active',  color === 'green');
+
+  document.getElementById('miniR').classList.toggle('on', color === 'red');
+  document.getElementById('miniY').classList.toggle('on', color === 'yellow');
+  document.getElementById('miniG').classList.toggle('on', color === 'green');
+
+  const el = document.getElementById('activeSig');
+  el.textContent = color.toUpperCase();
+  el.className = 'stat-val ' + { red: 'red-t', yellow: 'yel-t', green: 'grn-t' }[color];
+
+  const glowMap = { red: 'var(--red-glow)', yellow: 'var(--yellow-glow)', green: 'var(--green-glow)' };
+  const c = glowMap[color];
+  document.documentElement.style.setProperty('--active-color', c);
+
+  document.getElementById('roadBadge').style.background = c;
+  document.getElementById('roadBadge').style.boxShadow  = `0 0 6px ${c}`;
+  const msgs = { red: 'RED · ALL STOP', yellow: 'YELLOW · CAUTION', green: 'GREEN · FLOW ACTIVE' };
+  document.getElementById('roadStatus').textContent = msgs[color];
+
+  document.getElementById('timerBar').style.background = c;
+  document.getElementById('timerBar').style.boxShadow  = `0 0 8px ${c}`;
+
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('sel'));
+  const selMap = { red: 0, yellow: 1, green: 2 };
+  document.querySelectorAll('.ctrl-btn')[selMap[color]].classList.add('sel');
+
+  currentLight = color;
+}
+
+function setManualLight(color) {
+  if (currentMode !== 'manual') return;
+  tlRef.update({ signal: color, timestamp: Date.now() });
+  updateVisuals(color);
+  addLog(`Dashboard → ${color.toUpperCase()} (manual)`, color);
+}
+
+function setMode(mode) {
+  tlRef.update({ mode });
+  addLog(`Mode → ${mode.toUpperCase()}`, 'gold');
+  applyModeUI(mode);
+  syncHenshinAudio(mode);
+  if (mode === 'auto') startAutoCycle();
+  else stopAutoCycle();
+}
+
+function applyModeUI(mode) {
+  currentMode = mode;
+  document.getElementById('manualBtn').classList.toggle('active', mode === 'manual');
+  document.getElementById('autoBtn').classList.toggle('active',   mode === 'auto');
+  document.getElementById('activeMode').textContent = mode.toUpperCase();
+  const disabled = mode !== 'manual';
+  document.querySelectorAll('.ctrl-btn, .tl-light').forEach(b => {
+    b.style.opacity       = disabled ? '0.45' : '1';
+    b.style.pointerEvents = disabled ? 'none'  : 'auto';
+  });
+}
+
+function updateDurations() {
+  tlRef.update({
+    durRed:    parseInt(document.getElementById('durRed').value)   || 30,
+    durYellow: YELLOW_FIXED_S,
+    durGreen:  parseInt(document.getElementById('durGreen').value) || 25,
+  });
+  addLog('Durations updated → Firebase', 'gold');
+}
+
+let prevMode = '';
+
+tlRef.on('value', snap => {
+  const data = snap.val();
+  if (!data) return;
+
+  if (data.esp32Online !== undefined) {
+    document.getElementById('espDot').className =
+      data.esp32Online ? 'conn-dot online' : 'conn-dot offline';
+    document.getElementById('espStatus').textContent =
+      data.esp32Online ? 'ESP32 OK' : 'ESP32 OFF';
+  }
+
+  if (data.ip) document.getElementById('espIP').textContent = data.ip;
+
+  if (data.uptime !== undefined) {
+    const s   = data.uptime;
+    const m   = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    document.getElementById('uptimeVal').textContent = `${m}:${sec}`;
+  }
+
+  if (data.durRed   !== undefined) document.getElementById('durRed').value   = data.durRed;
+  if (data.durGreen !== undefined) document.getElementById('durGreen').value  = data.durGreen;
+
+  if (data.mode && data.mode !== prevMode) {
+    prevMode = data.mode;
+    applyModeUI(data.mode);
+    syncHenshinAudio(data.mode);
+    addLog(`Mode synced ← ${data.mode.toUpperCase()}`, 'gold');
+    if (data.mode === 'auto' && currentMode !== 'auto') startAutoCycle();
+    else if (data.mode !== 'auto') stopAutoCycle();
+  }
+
+  if (currentMode === 'manual' && data.signal && data.signal !== currentLight) {
+    updateVisuals(data.signal);
+    addLog(`Signal ← ${data.signal.toUpperCase()} (ESP32)`, data.signal);
+  }
+});
+
+function addLog(msg, color) {
+  const container = document.getElementById('logEntries');
+  const now  = new Date();
+  const time = now.toTimeString().slice(0, 8);
+  const colors = { red: '#ff3311', yellow: '#ffcc00', green: '#2ecc71', gold: '#ffcc00' };
+  const dot  = colors[color] || '#554433';
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><div class="log-dot" style="background:${dot};box-shadow:0 0 5px ${dot}"></div><span class="log-msg">${msg}</span>`;
+  container.insertBefore(entry, container.firstChild);
+  if (container.children.length > 60) container.lastChild.remove();
+}
+
+// ─── ROAD CANVAS ─────────────────────────────────────────────────
+const canvas = document.getElementById('roadCanvas');
+const ctx = canvas.getContext('2d');
+let cars = [];
+let carIdCounter = 0;
+
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const CAR_COLORS = ['#ff3311','#e6a800','#ffcc00','#cc2200','#ff8800','#cc6600','#ff5533'];
+const CAR_W = 40, CAR_H = 22;
+
+function spawnCar() {
+  const lane = Math.floor(Math.random() * 3);
+  cars.push({
+    id: carIdCounter++,
+    x: -60,
+    lane,
+    color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
+    speed: 1.5 + Math.random() * 1.5,
+  });
+}
+
+function getLaneY(lane, H) {
+  const roadTop = H * 0.35;
+  const roadH   = H * 0.45;
+  const laneH   = roadH / 3;
+  return roadTop + laneH * lane + laneH / 2;
+}
+
+function drawScene() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Sky — warm dark reddish
+  const sky = ctx.createLinearGradient(0, 0, 0, H * 0.35);
+  sky.addColorStop(0, '#080204');
+  sky.addColorStop(1, '#140608');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H * 0.35);
+
+  // Stars
+  ctx.fillStyle = 'rgba(255,220,180,0.55)';
+  for (let i = 0; i < 60; i++) {
+    ctx.beginPath();
+    ctx.arc(((i * 137 + 7) % W), ((i * 89 + 3) % (H * 0.32)), 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ground
+  const ground = ctx.createLinearGradient(0, H * 0.8, 0, H);
+  ground.addColorStop(0, '#120604');
+  ground.addColorStop(1, '#080302');
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, H * 0.8, W, H * 0.2);
+
+  // Road
+  const roadTop = H * 0.35, roadH = H * 0.45;
+  const road = ctx.createLinearGradient(0, roadTop, 0, roadTop + roadH);
+  road.addColorStop(0, '#1c1008');
+  road.addColorStop(0.5, '#160c06');
+  road.addColorStop(1, '#100804');
+  ctx.fillStyle = road;
+  ctx.fillRect(0, roadTop, W, roadH);
+
+  // Road edges — red/gold
+  ctx.strokeStyle = '#cc2200'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, roadTop);          ctx.lineTo(W, roadTop);          ctx.stroke();
+  ctx.strokeStyle = '#e6a800';
+  ctx.beginPath(); ctx.moveTo(0, roadTop + roadH);  ctx.lineTo(W, roadTop + roadH);  ctx.stroke();
+
+  // Lane dividers
+  const laneH = roadH / 3;
+  ctx.strokeStyle = 'rgba(255,180,50,0.15)'; ctx.lineWidth = 1;
+  ctx.setLineDash([24, 18]);
+  for (let l = 1; l < 3; l++) {
+    ctx.beginPath(); ctx.moveTo(0, roadTop + laneH * l); ctx.lineTo(W, roadTop + laneH * l); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Traffic light pole
+  const tlX = W * 0.7, tlY = roadTop - 10;
+  ctx.strokeStyle = '#884422'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(tlX, tlY);      ctx.lineTo(tlX, tlY - 90);      ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tlX, tlY - 90); ctx.lineTo(tlX + 30, tlY - 90); ctx.stroke();
+
+  ctx.fillStyle = '#1e1008'; ctx.strokeStyle = '#663311'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(tlX + 16, tlY - 110, 28, 72, 4); ctx.fill(); ctx.stroke();
+
+  const bulbs = [
+    { y: tlY - 106, col: currentLight === 'red'    ? '#ff3311' : '#1a0404', glow: '#ff3311' },
+    { y: tlY - 84,  col: currentLight === 'yellow' ? '#ffcc00' : '#140e00', glow: '#ffcc00' },
+    { y: tlY - 62,  col: currentLight === 'green'  ? '#2ecc71' : '#001008', glow: '#2ecc71' },
+  ];
+  bulbs.forEach(b => {
+    ctx.beginPath(); ctx.arc(tlX + 30, b.y + 8, 9, 0, Math.PI * 2);
+    const isLit = !['#1a0404','#140e00','#001008'].includes(b.col);
+    ctx.shadowColor = isLit ? b.glow : 'transparent';
+    ctx.shadowBlur  = isLit ? 18 : 0;
+    ctx.fillStyle   = b.col; ctx.fill();
+    ctx.shadowBlur  = 0;
+  });
+
+  // Stop line
+  const stopX = tlX - 10;
+  ctx.strokeStyle = 'rgba(255,180,100,0.5)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(stopX, roadTop); ctx.lineTo(stopX, roadTop + roadH); ctx.stroke();
+
+  // ── Cars ──
+  const STOP_X  = stopX - CAR_W / 2 - 4;
+  const CAR_GAP = CAR_W + 12;
+
+  [0, 1, 2].forEach(lane => {
+    const lc = cars.filter(c => c.lane === lane).sort((a, b) => b.x - a.x);
+    lc.forEach((car, i) => {
+      const leader      = i === 0 ? null : lc[i - 1];
+      const hasCrossed  = (car.x + CAR_W / 2) > stopX;
+      const stopLineLimit = (currentLight !== 'green' && !hasCrossed) ? STOP_X : Infinity;
+      const carAheadLimit = leader ? leader.x - CAR_GAP : Infinity;
+      const limit         = Math.min(stopLineLimit, carAheadLimit);
+      if (car.x < limit) car.x = Math.min(car.x + car.speed, limit);
+    });
+  });
+
+  for (let idx = cars.length - 1; idx >= 0; idx--) {
+    const car = cars[idx];
+    const y   = getLaneY(car.lane, H);
+
+    ctx.save();
+    ctx.translate(car.x, y);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(-CAR_W/2 + 3, 4, CAR_W, 8);
+    const grad = ctx.createLinearGradient(-CAR_W/2, -CAR_H/2, CAR_W/2, CAR_H/2);
+    grad.addColorStop(0, car.color);
+    grad.addColorStop(1, shadeColor(car.color, -30));
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.roundRect(-CAR_W/2, -CAR_H/2, CAR_W, CAR_H, 4); ctx.fill();
+    ctx.fillStyle = 'rgba(255,220,150,0.25)';
+    ctx.fillRect(-CAR_W/2 + 22, -CAR_H/2 + 3, 10, CAR_H - 6);
+    ctx.fillStyle = 'rgba(255,240,180,0.9)';
+    ctx.shadowColor = '#ffe0a0'; ctx.shadowBlur = 8;
+    ctx.fillRect(CAR_W/2 - 4, -CAR_H/2 + 4, 4, 5);
+    ctx.fillRect(CAR_W/2 - 4,  CAR_H/2 - 9, 4, 5);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ff3311';
+    ctx.fillRect(-CAR_W/2, -CAR_H/2 + 4, 3, 5);
+    ctx.fillRect(-CAR_W/2,  CAR_H/2 - 9, 3, 5);
+    ctx.restore();
+
+    if (car.x > W + 80) {
+      if (currentLight === 'green') {
+        carsPassed++;
+        document.getElementById('carsPassed').textContent = carsPassed;
+      }
+      cars.splice(idx, 1);
+    }
+  }
+}
+
+function shadeColor(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, Math.max(0, (n >> 16) + amt));
+  const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + amt));
+  const b = Math.min(255, Math.max(0, (n & 0xff) + amt));
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+}
+
+setInterval(() => { if (cars.length < 12) spawnCar(); }, 1800);
+function loop() { drawScene(); requestAnimationFrame(loop); }
+loop();
+
+// ─── Audio ───────────────────────────────────────────────────────
+const audioHenshin = document.getElementById('audioHenshin');
+const audioOOO     = document.getElementById('audioOOO');
+let oooPlaying = false;
+
+function syncHenshinAudio(mode) {
+  if (mode === 'auto') audioHenshin.play().catch(() => {});
+  else                 audioHenshin.pause();
+}
+
+function toggleOOOMusic() {
+  const btn   = document.getElementById('oooMusicBtn');
+  const label = document.getElementById('oooMusicLabel');
+  if (oooPlaying) {
+    audioOOO.pause();
+    oooPlaying = false;
+    btn.classList.remove('playing');
+    label.textContent = 'OOO BGM';
+  } else {
+    audioOOO.play().catch(() => {});
+    oooPlaying = true;
+    btn.classList.add('playing');
+    label.textContent = 'PLAYING';
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+addLog('OOO Traffic System initialized', 'gold');
+addLog('Sequence: GREEN → YELLOW(5s) → RED → GREEN', 'gold');
+addLog('Awaiting Firebase connection…', 'gold');
+
+for (let i = 0; i < 4; i++) setTimeout(spawnCar, i * 600);
+</script>
+</body>
+</html>
